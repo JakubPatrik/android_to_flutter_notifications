@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
@@ -51,10 +52,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  List<dynamic> l = [" "];
+
   Future<void> _readNotifications() async {
     try {
       var obj = await platform.invokeMethod('readNotification');
-      print(obj.toString());
+      print(obj.runtimeType);
+      setState(() {
+        l = obj;
+      });
     } on PlatformException catch (e) {
       print(e.toString());
     }
@@ -68,16 +74,104 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> _subscribeToTopic(String topic) async {
+    try {
+      await platform.invokeMethod('subscribeToTopic', {"topic": topic});
+    } on PlatformException catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> _unsubscribeFromTopic(String topic) async {
+    try {
+      await platform.invokeMethod('_unsubscribeFromTopic', {"topic": topic});
+    } on PlatformException catch (e) {
+      print(e.toString());
+    }
+  }
+
+  bool _allowNotifications = false;
+  bool _pushNotifications = false;
+  bool _canReadNotifications = false;
+
+  final kText = TextStyle(
+    color: Colors.black,
+    fontSize: 17,
+    fontWeight: FontWeight.w700,
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Battery LEVEL INFO"),
+        elevation: 0,
+        title: Text(
+          "Notifikacie",
+          style: kText,
+        ),
+        centerTitle: true,
+        leading: Icon(
+          Icons.arrow_back,
+          color: Colors.black,
+        ),
+        backgroundColor: Colors.white,
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          Container(
+            color: Color.fromRGBO(234, 235, 237, 0.7),
+            height: 40,
+          ),
+          buildSwitchTile(
+              "Povolit notifikacie",
+              () => _subscribeToTopic("topic"),
+              () => _unsubscribeFromTopic("topic"),
+              _allowNotifications),
+          Container(
+              color: Color.fromRGBO(12, 158, 242, 0.2),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 25,
+                    ),
+                    Expanded(
+                        child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "You’ll need to opt in into notification through the Android Settings app to recieve notifications on Topankovo app.",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 8,
+                          ),
+                          GestureDetector(
+                            onTap: () => _showNotificationCenter(),
+                            child: Text("Go to Settings",
+                                style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff0c9ef2))),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ])),
+          buildSwitchTile("Pushnut notifikaciu", _showNotification,
+              _showNotification, _pushNotifications),
+          buildSwitchTile("Ukazat notifikacie", _readNotifications,
+              _readNotifications, _canReadNotifications),
+          Spacer(),
           Center(
               child: FutureBuilder(
             future: _getBatteryLevel(),
@@ -88,31 +182,55 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           )),
-          FlatButton.icon(
-            icon: Icon(Icons.notifications),
-            onPressed: () => _showNotification(),
-            label: Text("Show Notification"),
-          ),
-          FlatButton.icon(
-            icon: Icon(Icons.notifications),
-            onPressed: () => _readNotifications(),
-            label: Text("Display Notification"),
-          ),
-          FlatButton.icon(
-            icon: Icon(Icons.notifications),
-            onPressed: () => _showNotificationCenter(),
-            label: Text("Notification Center"),
-          ),
+          ...List.generate(l.length, (int index) => Text(l[index])),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton(
-        child: Icon(
-          Icons.battery_std,
-          color: Colors.white,
-          size: 40,
-        ),
-        onPressed: () => _getBatteryLevel(),
+    );
+  }
+
+  Container buildSwitchTile(
+      String text, Function fyes, Function fno, bool show) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Icon(
+            Icons.label_outline,
+            size: 30,
+          ),
+          SizedBox(
+            width: 20,
+          ),
+          Expanded(
+              child: Text(
+            text,
+            style: kText,
+          )),
+          Transform.scale(
+            scale: 0.8,
+            child: CupertinoSwitch(
+              onChanged: (value) async {
+                setState(() {
+                  if (fyes == _showNotification) {
+                    _pushNotifications = value;
+                  } else if (fyes == _readNotifications) {
+                    _canReadNotifications = value;
+                  } else
+                    _allowNotifications = value;
+                });
+                if (value)
+                  await fyes.call();
+                else
+                  await fno.call();
+              },
+              value: show,
+              trackColor: Color(0xffE0E1E3),
+              activeColor: Colors.black,
+            ),
+          )
+        ],
       ),
     );
   }

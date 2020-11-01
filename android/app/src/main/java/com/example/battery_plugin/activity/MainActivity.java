@@ -76,6 +76,14 @@ public class MainActivity extends FlutterActivity {
           else if (call.method.equals("showNotificationCenter")){
             showNotificationCenter();
           }
+          else if (call.method.equals("subscribeToTopic")){
+            FirebaseMessaging.getInstance().subscribeToTopic(call.argument("topic"));
+            System.out.println("subscribed to : " + call.argument("topic"));
+          }
+          else if (call.method.equals("_unsubscribeFromTopic")){
+            FirebaseMessaging.getInstance().unsubscribeFromTopic(call.argument("topic"));
+            System.out.println("unsubscribed from : " + call.argument("topic"));
+          }
           else {
             result.notImplemented();
           }
