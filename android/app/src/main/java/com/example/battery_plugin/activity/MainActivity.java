@@ -2,78 +2,115 @@ package com.example.battery_plugin.activity;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
-import android.content.ContextWrapper;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.net.Uri;
-import android.os.BatteryManager;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
-import com.example.battery_plugin.R;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.plugin.common.EventChannel;
+import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-//
-import java.util.ArrayList;
+import io.flutter.plugins.GeneratedPluginRegistrant;
 
 public class MainActivity extends FlutterActivity {
-  private static final String CHANNEL = "battery_plugin/channel";
   static final String CHANNEL_ID = "1010";
 
+  private static final String CHANNEL = "initial";
+  private static final String EVENTS = "eventWhileAppIsRunning";
+  private String startString;
+  private BroadcastReceiver linksReceiver;
+
   @Override
-  public void onCreate(Bundle savedInstanceState) {
+  protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     createNotificationChannel();
     FirebaseMessaging.getInstance().getToken().addOnSuccessListener(this, token -> {
      System.out.println("registrationToken =" + token);
     });
 
-  }
+    Intent intent = getIntent();
+    Uri data = intent.getData();
+    if (data != null)
+        System.out.println(data.toString());
+
+    new MethodChannel(getFlutterEngine().getDartExecutor().getBinaryMessenger(), CHANNEL).setMethodCallHandler(
+            (call, result) -> {
+           if (call.method.equals("initialLink")) {
+                if (startString != null) {
+                  result.success(startString);
+                }
+              }
+            }
+    );
+
+    new EventChannel(getFlutterEngine().getDartExecutor().getBinaryMessenger(), EVENTS).setStreamHandler(
+            new EventChannel.StreamHandler() {
+              @Override
+              public void onListen(Object args, final EventChannel.EventSink events) {
+                linksReceiver = createChangeReceiver(events);
+              }
+
+              @Override
+              public void onCancel(Object args) {
+                linksReceiver = null;
+              }
+            }
+    );
+
+    if (data != null) {
+      startString = data.toString();
+      System.out.println(startString);
+      if(linksReceiver != null) {
+        linksReceiver.onReceive(this.getApplicationContext(), intent);
+      }
+    }}
+
+    @Override
+    public void onNewIntent(Intent intent){
+      super.onNewIntent(intent);
+      if(intent.getAction() == android.content.Intent.ACTION_VIEW && linksReceiver != null) {
+        linksReceiver.onReceive(this.getApplicationContext(), intent);
+      }
+    }
+
+    private BroadcastReceiver createChangeReceiver(final EventChannel.EventSink events) {
+      return new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+          // NOTE: assuming intent.getAction() is Intent.ACTION_VIEW
+
+          String dataString = intent.getDataString();
+
+          if (dataString == null) {
+            events.error("UNAVAILABLE", "Link unavailable", null);
+          } else {
+            events.success(dataString);
+          }
+        }
+      };
+    }
+
+
 
   @Override
   public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
     super.configureFlutterEngine(flutterEngine);
     new MethodChannel(
       flutterEngine.getDartExecutor().getBinaryMessenger(),
-      CHANNEL
+            "battery_plugin/channel"
     )
     .setMethodCallHandler(
         (call, result) -> {
-          if (call.method.equals("getBatteryLevel")) {
-            int batteryLevel = getBatteryLevel();
-
-            if (batteryLevel != -1) {
-              result.success(batteryLevel);
-            } else {
-              result.error("UNAVAILABLE", "Battery level not available.", null);
-            }
-          } else if (call.method.equals("showNotification")) {
-            showNotification(
-              call.argument("title"),
-              call.argument("description"),
-              call.argument("id")
-            );
-          } else if (call.method.equals("readNotification")) {
-            ArrayList<String> res = readNotification();
-            if (res != null) {
-              result.success(res);
-            } else {
-              result.error("EMPTY", "Cannot fetch active notifications", null);
-            }
-          }
-          else if (call.method.equals("showNotificationCenter")){
+          if (call.method.equals("showNotificationCenter")){
             showNotificationCenter();
           }
           else if (call.method.equals("subscribeToTopic")){
@@ -125,67 +162,7 @@ public class MainActivity extends FlutterActivity {
     }
   }
 
-  Intent resultIntent;
-  PendingIntent pendingIntent;
-  TaskStackBuilder tsb;
 
-  private ArrayList<String> readNotification() {
-    ArrayList<String> l = new ArrayList();
-    if (VERSION.SDK_INT >= VERSION_CODES.M) {
-      StatusBarNotification[] sbn = getSystemService(NotificationManager.class)
-        .getActiveNotifications()
-        .clone();
-      for (StatusBarNotification n : sbn) {
-        l.add(n.getNotification().extras.getString("android.title"));
-      }
-      return l;
-    }
-    return null;
-  }
 
-  private void showNotification(String title, String description, String id) {
-    NotificationCompat.Builder builder = new NotificationCompat.Builder(
-      this,
-      CHANNEL_ID
-    )
-      .setSmallIcon(R.drawable.ic_launcher)
-      .setContentTitle(title)
-      .setContentText(description)
-      .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-    resultIntent = new Intent(this, MainActivity.class);
-    tsb = TaskStackBuilder.create(this);
-    tsb.addParentStack(MainActivity.this);
-
-    tsb.addNextIntent(resultIntent);
-    pendingIntent = tsb.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-
-    builder.setContentIntent(pendingIntent);
-
-    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(
-      this
-    );
-
-    // notificationId is a unique int for each notification that you must define
-    notificationManager.notify(Integer.parseInt(id), builder.build());
-  }
-
-  private int getBatteryLevel() {
-    int batteryLevel = -1;
-    if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-      BatteryManager batteryManager = (BatteryManager) getSystemService(
-        BATTERY_SERVICE
-      );
-      batteryLevel =
-        batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-    } else {
-      Intent intent = new ContextWrapper(getApplicationContext())
-      .registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-      batteryLevel =
-        (intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) * 100) /
-        intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-    }
-
-    return batteryLevel;
-  }
 }
