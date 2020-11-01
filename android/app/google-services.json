@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "313217625841",
+    "firebase_url": "https://android2flutter-notifications.firebaseio.com",
+    "project_id": "android2flutter-notifications",
+    "storage_bucket": "android2flutter-notifications.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313217625841:android:362cf1a05eaf27e9740350",
+        "android_client_info": {
+          "package_name": "com.example.battery_plugin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "313217625841-v6ksg45att75gkkq61jkrvsc1h5gilhu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTF6q0vqSWOjRTt0aVo8pHIGbDPGY_YCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "313217625841-v6ksg45att75gkkq61jkrvsc1h5gilhu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
