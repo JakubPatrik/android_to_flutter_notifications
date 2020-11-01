@@ -1,6 +1,5 @@
-package com.example.battery_plugin;
+package com.example.battery_plugin.activity;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -13,9 +12,14 @@ import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+
+import com.example.battery_plugin.R;
+import com.google.firebase.messaging.FirebaseMessaging;
+
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
@@ -24,13 +28,16 @@ import java.util.ArrayList;
 
 public class MainActivity extends FlutterActivity {
   private static final String CHANNEL = "battery_plugin/channel";
-  private static final String CHANNEL_ID = "1010";
+  static final String CHANNEL_ID = "1010";
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     createNotificationChannel();
-//    new MyFirebaseMessagingService().sendRegistrationToServer();
+    FirebaseMessaging.getInstance().getToken().addOnSuccessListener(this, token -> {
+     System.out.println("registrationToken =" + token);
+    });
+
   }
 
   @Override
@@ -71,11 +78,7 @@ public class MainActivity extends FlutterActivity {
   }
 
   private void createNotificationChannel() {
-    // Create the NotificationChannel, but only on API 26+ because
-    // the NotificationChannel class is new and not in the support library
     if (VERSION.SDK_INT >= VERSION_CODES.O) {
-      // CharSequence name = getString(R.string.channel_name);
-      // String description = getString(R.string.channel_description);
       int importance = NotificationManager.IMPORTANCE_DEFAULT;
       NotificationChannel channel = new NotificationChannel(
         CHANNEL_ID,
@@ -83,8 +86,7 @@ public class MainActivity extends FlutterActivity {
         importance
       );
       channel.setDescription("description");
-      // Register the channel with the system; you can't change the importance
-      // or other notification behaviors after this
+
       NotificationManager notificationManager = getSystemService(
         NotificationManager.class
       );
