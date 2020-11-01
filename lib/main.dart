@@ -60,6 +60,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> _showNotificationCenter() async {
+    try {
+      await platform.invokeMethod('showNotificationCenter');
+    } on PlatformException catch (e) {
+      print(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,6 +97,11 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: Icon(Icons.notifications),
             onPressed: () => _readNotifications(),
             label: Text("Display Notification"),
+          ),
+          FlatButton.icon(
+            icon: Icon(Icons.notifications),
+            onPressed: () => _showNotificationCenter(),
+            label: Text("Notification Center"),
           ),
         ],
       ),

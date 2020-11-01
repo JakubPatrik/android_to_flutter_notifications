@@ -7,10 +7,12 @@ import android.app.TaskStackBuilder;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.NonNull;
@@ -70,11 +72,32 @@ public class MainActivity extends FlutterActivity {
             } else {
               result.error("EMPTY", "Cannot fetch active notifications", null);
             }
-          } else {
+          }
+          else if (call.method.equals("showNotificationCenter")){
+            showNotificationCenter();
+          }
+          else {
             result.notImplemented();
           }
         }
       );
+  }
+
+  private void showNotificationCenter() {
+    Intent intent = new Intent();
+    if (VERSION.SDK_INT >= VERSION_CODES.O) {
+      intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+      intent.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+    } else if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP){
+      intent.setAction("android.settings.APP_NOTIFICATION_SETTINGS");
+      intent.putExtra("app_package", getPackageName());
+      intent.putExtra("app_uid", getApplicationInfo().uid);
+    } else {
+      intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+      intent.addCategory(Intent.CATEGORY_DEFAULT);
+      intent.setData(Uri.parse("package:" + getPackageName()));
+    }
+    startActivity(intent);
   }
 
   private void createNotificationChannel() {
