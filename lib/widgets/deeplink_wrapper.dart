@@ -1,5 +1,5 @@
-import 'package:battery_plugin/deeplink_bloc.dart';
-import 'package:battery_plugin/home.dart';
+import 'package:battery_plugin/bloc/deeplink_bloc.dart';
+import 'package:battery_plugin/widgets/notification_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -13,12 +13,8 @@ class DeepLinkWrapper extends StatelessWidget {
         builder: (context, snapshot) {
           // if app is started normally, no deep link is clicked show your old home page widget
           if (!snapshot.hasData) {
-            return MyHomePage();
+            return NotificationView();
           } else {
-            final splitInviteLink = snapshot.data.split('/');
-            final inviteToken = splitInviteLink[splitInviteLink.length - 1];
-            print(inviteToken);
-
             return Scaffold(
               key: UniqueKey(),
               body: Center(

@@ -1,18 +1,18 @@
-class Notification {
+class NotificationModel {
   final String id;
   final String title;
   final String body;
   final String image;
 
-  Notification({
+  NotificationModel({
     this.id,
     this.title,
     this.body,
     this.image,
   });
 
-  factory Notification.fromJson(Map<String, dynamic> json) {
-    return Notification(
+  factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    return NotificationModel(
       id: json['data']['message_id'],
       title: json['data']['title'],
       body: json['data']['body'],

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:battery_plugin/model/notification_model.dart';
+
 class NotificationsBloc {
   NotificationsBloc._internal() {
     _notificationStreamController.onListen = _onListen;
@@ -11,11 +13,11 @@ class NotificationsBloc {
 
   Map<String, dynamic> _bufferedEvent;
 
-  Stream<Map<String, dynamic>> get notificationStream =>
+  Stream<NotificationModel> get notificationStream =>
       _notificationStreamController.stream;
 
   final _notificationStreamController =
-      StreamController<Map<String, dynamic>>.broadcast();
+      StreamController<NotificationModel>.broadcast();
 
   /// Called when `_notificationStreamController` gets first subscriber.
   ///
@@ -29,7 +31,8 @@ class NotificationsBloc {
   _onListen() {
     if (_sendBufferedEvents) {
       if (_bufferedEvent != null) {
-        _notificationStreamController.sink.add(_bufferedEvent);
+        _notificationStreamController.sink
+            .add(NotificationModel.fromJson(_bufferedEvent));
       }
       _sendBufferedEvents = false;
     }
@@ -39,7 +42,8 @@ class NotificationsBloc {
     if (_sendBufferedEvents) {
       _bufferedEvent = notification;
     } else {
-      _notificationStreamController.sink.add(notification);
+      _notificationStreamController.sink
+          .add(NotificationModel.fromJson(notification));
     }
   }
 

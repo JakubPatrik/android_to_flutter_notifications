@@ -1,8 +1,8 @@
-import 'package:battery_plugin/push_notifications_service.dart';
+import 'package:battery_plugin/services/push_notifications_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:battery_plugin/deeplink_bloc.dart';
-import 'package:battery_plugin/deeplink_wrapper.dart';
+import 'package:battery_plugin/bloc/deeplink_bloc.dart';
+import 'package:battery_plugin/widgets/deeplink_wrapper.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -25,11 +25,14 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Deeplink Notifications',
-        home: Scaffold(
-            body: Provider<DeepLinkBloc>(
-                create: (context) => DeepLinkBloc(),
-                dispose: (context, bloc) => bloc.dispose(),
-                child: DeepLinkWrapper())));
+      title: 'Flutter Deeplink Notifications',
+      home: Scaffold(
+        body: Provider<DeepLinkBloc>(
+          create: (context) => DeepLinkBloc(),
+          dispose: (context, bloc) => bloc.dispose(),
+          child: DeepLinkWrapper(),
+        ),
+      ),
+    );
   }
 }

@@ -1,16 +1,16 @@
 import 'dart:io';
 
-import 'package:battery_plugin/notification_bloc.dart';
+import 'package:battery_plugin/bloc/notification_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class MyHomePage extends StatefulWidget {
+class NotificationSettings extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _NotificationSettingsState createState() => _NotificationSettingsState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _NotificationSettingsState extends State<NotificationSettings> {
   static const platform = MethodChannel('battery_plugin/channel');
 
   Future<void> _showNotificationCenter() async {

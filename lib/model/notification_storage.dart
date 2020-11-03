@@ -28,11 +28,11 @@ class NotificationStorage {
     );
   }
 
-  Future<void> insert(Notification n) async {
+  Future<void> insert(NotificationModel n) async {
     await db.insert("$_table", n.toJson());
   }
 
-  Future<void> delete(Notification n) async {
+  Future<void> delete(NotificationModel n) async {
     await db.delete("$_table", where: "$_id = ${n.id}");
   }
 
