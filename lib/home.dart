@@ -1,5 +1,4 @@
-import 'dart:math';
-
+import 'package:battery_plugin/notification_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,46 +10,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   static const platform = MethodChannel('battery_plugin/channel');
-
-  // Future<void> _getBatteryLevel() async {
-  //   String batteryLevel;
-  //   try {
-  //     final int result = await platform.invokeMethod('getBatteryLevel');
-  //     batteryLevel = "Battery level at $result %.";
-  //   } on PlatformException catch (e) {
-  //     batteryLevel = "Failed to get battery level: '${e.message}'.";
-  //   }
-  //   setState(() {});
-
-  //   return batteryLevel;
-  // }
-
-  Future<void> _showNotification() async {
-    try {
-      final String id = Random().nextInt(10).toString();
-      await platform.invokeMethod('showNotification', {
-        'title': "Topankovo $id",
-        'description': "Nakupte este tento vikend za vyhodne ceny",
-        'id': id
-      });
-    } on PlatformException catch (e) {
-      print(e.toString());
-    }
-  }
-
-  List<dynamic> l = [" "];
-
-  // Future<void> _readNotifications() async {
-  //   try {
-  //     var obj = await platform.invokeMethod('readNotification');
-  //     print(obj.runtimeType);
-  //     setState(() {
-  //       l = obj;
-  //     });
-  //   } on PlatformException catch (e) {
-  //     print(e.toString());
-  //   }
-  // }
 
   Future<void> _showNotificationCenter() async {
     try {
@@ -77,8 +36,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   bool _allowNotifications = false;
-  bool _pushNotifications = false;
-  // bool _canReadNotifications = false;
 
   final kText = TextStyle(
     color: Colors.black,
@@ -103,74 +60,68 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         backgroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          Container(
-            color: Color.fromRGBO(234, 235, 237, 0.7),
-            height: 40,
-          ),
-          buildSwitchTile(
-              "Povolit notifikacie",
-              () => _subscribeToTopic("topic"),
-              () => _unsubscribeFromTopic("topic"),
-              _allowNotifications),
-          Container(
-              color: Color.fromRGBO(12, 158, 242, 0.2),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 25,
-                    ),
-                    Expanded(
-                        child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "You’ll need to opt in into notification through the Android Settings app to recieve notifications on Topankovo app.",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 8,
-                          ),
-                          GestureDetector(
-                            onTap: () => _showNotificationCenter(),
-                            child: Text("Go to Settings",
-                                style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff0c9ef2))),
-                          ),
-                        ],
+      body: Stack(children: [
+        Column(
+          children: [
+            Container(
+              color: Color.fromRGBO(234, 235, 237, 0.7),
+              height: 40,
+            ),
+            buildSwitchTile(
+                "Povolit notifikacie",
+                () => _subscribeToTopic("topic"),
+                () => _unsubscribeFromTopic("topic"),
+                _allowNotifications),
+            Container(
+                color: Color.fromRGBO(12, 158, 242, 0.2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 25,
                       ),
-                    )),
-                  ])),
-          buildSwitchTile("Pushnut notifikaciu", _showNotification,
-              _showNotification, _pushNotifications),
-          // buildSwitchTile("Ukazat notifikacie", _readNotifications,
-          //     _readNotifications, _canReadNotifications),
-          Spacer(),
-          // Center(
-          //     child: FutureBuilder(
-          //   future: _getBatteryLevel(),
-          //   builder: (context, snapshot) => Text(
-          //     snapshot.data ?? "Unknown battery level.",
-          //     style: TextStyle(
-          //       fontSize: 30,
-          //     ),
-          //   ),
-          // )),
-          ...List.generate(l.length, (int index) => Text(l[index])),
-        ],
-      ),
+                      Expanded(
+                          child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "You’ll need to opt in into notification through the Android Settings app to recieve notifications on Topankovo app.",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 8,
+                            ),
+                            GestureDetector(
+                              onTap: () => _showNotificationCenter(),
+                              child: Text("Go to Settings",
+                                  style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xff0c9ef2))),
+                            ),
+                          ],
+                        ),
+                      )),
+                    ])),
+          ],
+        ),
+        StreamBuilder(
+            stream: NotificationsBloc.instance.notificationStream,
+            builder: (context, snapshot) {
+              return Container(
+                child: Text(snapshot.hasData ? snapshot.data.toString() : ""),
+              );
+            })
+      ]),
     );
   }
 
@@ -199,12 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: CupertinoSwitch(
               onChanged: (value) async {
                 setState(() {
-                  if (fyes == _showNotification) {
-                    _pushNotifications = value;
-                    // } else if (fyes == _readNotifications) {
-                    //   _canReadNotifications = value;
-                  } else
-                    _allowNotifications = value;
+                  _allowNotifications = value;
                 });
                 if (value)
                   await fyes.call();

@@ -29,7 +29,10 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.3
   provider: ^4.3.2+2
+  path_provider: ^1.6.22
+
   firebase_messaging: ^7.0.3
+  flutter_local_notifications: ^3.0.1+2
 
 dev_dependencies:
   flutter_test:

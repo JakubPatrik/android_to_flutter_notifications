@@ -1,59 +1,189 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:battery_plugin/notification_bloc.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
 
-class PushNotificationService {
-  final BuildContext context;
-  final FirebaseMessaging _fcm = FirebaseMessaging();
+class NotificationService {
+  /// We want singelton object of ``NotificationService`` so create private constructor
+  /// Use NotificationService as ``NotificationService.instance``
+  NotificationService._internal();
 
-  PushNotificationService(this.context);
+  static final NotificationService instance = NotificationService._internal();
 
-  void initialise() {
-    if (Platform.isIOS) {
-      // request permissions if we're on iOS
-      _fcm.requestNotificationPermissions(IosNotificationSettings());
+  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+
+  FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      new FlutterLocalNotificationsPlugin();
+
+  /// For local_notification id
+  int _count = 0;
+
+  /// ``NotificationService`` started or not.
+  /// to start ``NotificationService`` call start method
+  bool _started = false;
+
+  /// Call this method on startup
+  /// This method will initialise notification settings
+  void start() {
+    if (!_started) {
+      _integrateNotification();
+      _refreshToken();
+      _started = true;
     }
+  }
 
-    _fcm.configure(
-      // Called when the app is in the foreground and we receive a push notification
-      onMessage: (Map<String, dynamic> message) async {
-        print('onMessage: $message');
-        _serialiseAndNavigate(message);
-      },
-      // Called when the app has been closed comlpetely and it's opened
-      // from the push notification.
-      onLaunch: (Map<String, dynamic> message) async {
-        print('onLaunch: $message');
-        _serialiseAndNavigate(message);
-      },
-      // Called when the app is in the background and it's opened
-      // from the push notification.
-      onResume: (Map<String, dynamic> message) async {
-        print('onResume: $message');
-        _serialiseAndNavigate(message);
-      },
+  // Call this method to initialize notification
+
+  void _integrateNotification() {
+    _registerNotification();
+    _initializeLocalNotification();
+  }
+
+  /// initialize firebase_messaging plugin
+  void _registerNotification() {
+    _firebaseMessaging.requestNotificationPermissions();
+
+    /// App in foreground -> [onMessage] callback will be called
+    /// App terminated -> Notification is delivered to system tray. When the user clicks on it to open app [onLaunch] fires
+    /// App in background -> Notification is delivered to system tray. When the user clicks on it to open app [onResume] fires
+    _firebaseMessaging.configure(
+      onMessage: _onMessage,
+      onLaunch: _onLaunch,
+      onResume: _onResume,
+    );
+    _firebaseMessaging.onTokenRefresh
+        .listen(_tokenRefresh, onError: _tokenRefreshFailure);
+  }
+
+  /// Token is unique identity of the device.
+  /// Token is required when you want to send notification to perticular user.
+  void _refreshToken() {
+    _firebaseMessaging.getToken().then((token) async {
+      print('token: $token');
+    }, onError: _tokenRefreshFailure);
+  }
+
+  /// This method will be called device token get refreshed
+  void _tokenRefresh(String newToken) async {
+    print('New Token : $newToken');
+  }
+
+  void _tokenRefreshFailure(error) {
+    print("FCM token refresh failed with error $error");
+  }
+
+  /// This method will be called on tap of the notification which came when app was in foreground
+  ///
+  /// Firebase messaging does not push notification in notification panel when app is in foreground.
+  /// To send the notification when app is in foreground we will use flutter_local_notification
+  /// to send notification which will behave similar to firebase notification
+  Future<void> _onMessage(Map<String, dynamic> message) async {
+    print('onMessage: $message');
+    if (Platform.isIOS) {
+      message = _modifyNotificationJson(message);
+    }
+    _showNotification(message);
+  }
+
+  /// This method will be called on tap of the notification which came when app was closed
+  Future<void> _onLaunch(Map<String, dynamic> message) {
+    print('onLaunch: $message');
+    if (Platform.isIOS) {
+      message = _modifyNotificationJson(message);
+    }
+    _performActionOnNotification(message);
+    return null;
+  }
+
+  /// This method will be called on tap of the notification which came when app was in background
+  Future<void> _onResume(Map<String, dynamic> message) {
+    print('onResume: $message');
+    if (Platform.isIOS) {
+      message = _modifyNotificationJson(message);
+    }
+    _performActionOnNotification(message);
+    return null;
+  }
+
+  /// This method will modify the message format of iOS Notification Data
+  Map _modifyNotificationJson(Map<String, dynamic> message) {
+    message['data'] = Map.from(message ?? {});
+    message['notification'] = message['aps']['alert'];
+    return message;
+  }
+
+  /// We want to perform same action of the click of the notification. So this common method will be called on
+  /// tap of any notification (onLaunch / onMessage / onResume)
+  void _performActionOnNotification(Map<String, dynamic> message) {
+    NotificationsBloc.instance.newNotification(message);
+  }
+
+  _downloadAndSaveFile(String url, String fileName) async {
+    var directory = await getApplicationDocumentsDirectory();
+    var filePath = '${directory.path}/$fileName';
+
+    var file = File(filePath);
+    var bytes = (await NetworkAssetBundle(Uri.parse(url)).load(url))
+        .buffer
+        .asUint8List();
+    await file.writeAsBytes(bytes);
+    return filePath;
+  }
+
+  /// used for sending push notification when app is in foreground
+  void _showNotification(message) async {
+    var attachmentPicturePath = await _downloadAndSaveFile(
+        message['data']['image'], 'attachment_img.jpg');
+    var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
+      'Notification Test',
+      'Notification Test',
+      '',
+      channelShowBadge: true,
+      largeIcon: FilePathAndroidBitmap(attachmentPicturePath),
+    );
+    var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
+
+    var platformChannelSpecifics = new NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics);
+    await _flutterLocalNotificationsPlugin.show(
+      ++_count,
+      message['notification']['title'],
+      message['notification']['body'],
+      platformChannelSpecifics,
+      payload: json.encode(
+        message['data'],
+      ),
     );
   }
 
-  void _serialiseAndNavigate(Map<String, dynamic> message) {
-    var notificationData = message['data'];
-    Navigator.of(context).push(CupertinoPageRoute(
-        builder: (context) => Scaffold(
-            appBar: AppBar(),
-            body: SafeArea(
-              child: Container(
-                  color: Colors.red,
-                  child: Text(
-                    notificationData.toString() ?? "null",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )),
-            ))));
-    print(notificationData.toString());
+  /// initialize flutter_local_notification plugin
+  void _initializeLocalNotification() {
+    // Settings for Android
+    var androidInitializationSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Settings for iOS
+    var iosInitializationSettings = new IOSInitializationSettings();
+    _flutterLocalNotificationsPlugin.initialize(
+      InitializationSettings(
+        android: androidInitializationSettings,
+        iOS: iosInitializationSettings,
+      ),
+      onSelectNotification: _onSelectLocalNotification,
+    );
+  }
+
+  /// This method will be called on tap of notification pushed by flutter_local_notification plugin when app is in foreground
+  Future _onSelectLocalNotification(String payLoad) {
+    Map data = json.decode(payLoad);
+    Map<String, dynamic> message = {
+      "data": data,
+    };
+    _performActionOnNotification(message);
+    return null;
   }
 }

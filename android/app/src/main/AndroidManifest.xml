@@ -37,6 +37,7 @@
               android:name="io.flutter.embedding.android.SplashScreenDrawable"
               android:resource="@drawable/launch_background"
               />
+              
             <!--experimenting with deep links-->
             <intent-filter android:label="InviteLink">
                 <action android:name="android.intent.action.VIEW" />
@@ -60,12 +61,6 @@
 
         </activity>
 
-       <!-- Firebase Notifications -->
-       <service android:name=".services.MyFirebaseMessagingService">
-           <intent-filter>
-               <action android:name="com.google.firebase.MESSAGING_EVENT" />
-           </intent-filter>
-       </service>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
