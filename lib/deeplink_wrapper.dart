@@ -13,9 +13,7 @@ class DeepLinkWrapper extends StatelessWidget {
         builder: (context, snapshot) {
           // if app is started normally, no deep link is clicked show your old home page widget
           if (!snapshot.hasData) {
-            return Container(
-              child: MyHomePage(),
-            );
+            return MyHomePage();
           } else {
             final splitInviteLink = snapshot.data.split('/');
             final inviteToken = splitInviteLink[splitInviteLink.length - 1];
