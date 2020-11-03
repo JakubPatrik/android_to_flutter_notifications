@@ -56,93 +56,102 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return CupertinoPageScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(
-          "Notifikacie",
-          style: kText,
-        ),
-        centerTitle: true,
-        leading: Icon(
-          Icons.arrow_back,
-          color: Colors.black,
-        ),
-        backgroundColor: Colors.white,
-      ),
-      body: ListView(children: [
-        Container(
-          color: Color.fromRGBO(234, 235, 237, 0.7),
-          height: 40,
-        ),
-        buildSwitchTile(
-          "Povolit notifikacie",
-          "",
-          () => _subscribeToTopic("topic"),
-          () => _unsubscribeFromTopic("topic"),
-          _allowNotifications,
-        ),
-        Container(
-            color: Color.fromRGBO(12, 158, 242, 0.2),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 25,
-                  ),
-                  Expanded(
-                      child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child: Column(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            leading: GestureDetector(
+              child: Icon(
+                Icons.keyboard_backspace,
+                color: Colors.black,
+              ),
+              onTap: () => print("Tapped"),
+            ),
+            automaticallyImplyLeading: false,
+            largeTitle: Text(
+              "Notifikacie",
+              textAlign: TextAlign.left,
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Container(
+                color: Color.fromRGBO(234, 235, 237, 0.7),
+                height: 40,
+              ),
+              buildSwitchTile(
+                "Povolit notifikacie",
+                "",
+                () => _subscribeToTopic("topic"),
+                () => _unsubscribeFromTopic("topic"),
+                _allowNotifications,
+              ),
+              Container(
+                  color: Color.fromRGBO(12, 158, 242, 0.2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "You’ll need to opt in into notification through the $os Settings app to recieve notifications on Topankovo app.",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                        Icon(
+                          Icons.info_outline,
+                          size: 25,
+                        ),
+                        Expanded(
+                            child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 30),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "You’ll need to opt in into notification through the $os Settings app to recieve notifications on Topankovo app.",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              SizedBox(
+                                height: 8,
+                              ),
+                              GestureDetector(
+                                onTap: () => _showNotificationCenter(),
+                                child: Text(
+                                  "Go to Settings",
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xff0c9ef2),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        SizedBox(
-                          height: 8,
-                        ),
-                        GestureDetector(
-                          onTap: () => _showNotificationCenter(),
-                          child: Text(
-                            "Go to Settings",
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xff0c9ef2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-                ])),
-        ...List.generate(
-          4,
-          (index) => buildSwitchTile(
-            texts[index],
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit aliquet commodo",
-            () {},
-            () {},
-            _allowNotifications,
+                        )),
+                      ])),
+              ...List.generate(
+                4,
+                (index) => buildSwitchTile(
+                  texts[index],
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit aliquet commodo",
+                  () {},
+                  () {},
+                  _allowNotifications,
+                ),
+              ),
+              StreamBuilder(
+                  stream: NotificationsBloc.instance.notificationStream,
+                  builder: (context, snapshot) {
+                    return Container(
+                      child: Text(
+                          snapshot.hasData ? snapshot.data.toString() : ""),
+                    );
+                  })
+            ]),
           ),
-        ),
-        StreamBuilder(
-            stream: NotificationsBloc.instance.notificationStream,
-            builder: (context, snapshot) {
-              return Container(
-                child: Text(snapshot.hasData ? snapshot.data.toString() : ""),
-              );
-            })
-      ]),
+        ],
+      ),
     );
   }
 
