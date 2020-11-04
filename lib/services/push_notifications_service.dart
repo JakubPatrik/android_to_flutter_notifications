@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:battery_plugin/bloc/notification_bloc.dart';
-import 'package:battery_plugin/model/notification_model.dart';
-import 'package:battery_plugin/model/notification_storage.dart';
+import 'package:battery_plugin/bloc/helper.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -12,9 +10,15 @@ import 'package:path_provider/path_provider.dart';
 class NotificationService {
   /// We want singelton object of ``NotificationService`` so create private constructor
   /// Use NotificationService as ``NotificationService.instance``
+  static final NotificationService instance = NotificationService._internal();
   NotificationService._internal();
 
-  static final NotificationService instance = NotificationService._internal();
+  Helper _helper;
+
+  factory NotificationService(Helper helper) {
+    instance._helper = helper;
+    return instance;
+  }
 
   FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
@@ -84,7 +88,7 @@ class NotificationService {
   /// To send the notification when app is in foreground we will use flutter_local_notification
   /// to send notification which will behave similar to firebase notification
   Future<void> _onMessage(Map<String, dynamic> message) async {
-    print('onMessage: $message');
+    // print('onMessage: $message');
     if (Platform.isIOS) {
       message = _modifyNotificationJson(message);
     }
@@ -93,23 +97,21 @@ class NotificationService {
   }
 
   /// This method will be called on tap of the notification which came when app was closed
-  Future<void> _onLaunch(Map<String, dynamic> message) {
-    print('onLaunch: $message');
+  Future<void> _onLaunch(Map<String, dynamic> message) async {
+    // print('onLaunch: $message');
     if (Platform.isIOS) {
       message = _modifyNotificationJson(message);
     }
-    _performActionOnNotification(message);
-    return null;
+    _performActionOnNotification(Map.from(message));
   }
 
   /// This method will be called on tap of the notification which came when app was in background
-  Future<void> _onResume(Map<String, dynamic> message) {
-    print('onResume: $message');
+  Future<void> _onResume(Map<String, dynamic> message) async {
+    // print('onResume: $message');
     if (Platform.isIOS) {
       message = _modifyNotificationJson(message);
     }
-    _performActionOnNotification(message);
-    return null;
+    _performActionOnNotification(Map.from(message));
   }
 
   /// This method will modify the message format of iOS Notification Data
@@ -122,9 +124,8 @@ class NotificationService {
   /// We want to perform same action of the click of the notification. So this common method will be called on
   /// tap of any notification (onLaunch / onMessage / onResume)
   void _performActionOnNotification(Map<String, dynamic> message) {
-    NotificationsBloc.instance.newNotification(message);
-    NotificationStorage.instance
-        .insert(NotificationModel.fromJson(message['data']));
+    print(message['data']);
+    _helper.newNotification(message['data']);
   }
 
   _downloadAndSaveFile(String url, String fileName) async {

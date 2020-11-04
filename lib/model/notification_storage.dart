@@ -9,6 +9,7 @@ import 'notification_model.dart';
 class NotificationStorage {
   static const String _table = "notificationTable";
   static const String _id = "message_id";
+  static const String _created = "created";
   static const String _title = "title";
   static const String _body = "body";
   static const String _image = "image";
@@ -33,7 +34,8 @@ class NotificationStorage {
       path,
       onCreate: (db, version) {
         db.execute('''CREATE TABLE $_table(
-            $_id STRING,
+            $_id STRING PRIMARY KEY,
+            $_created STRING,
             $_title STRING,
             $_body STRING,
             $_image STRING
@@ -50,8 +52,11 @@ class NotificationStorage {
 
   Future<void> insert(NotificationModel n) async {
     Database db = await instance.database;
-    final i = await db.insert("$_table", n.toJson());
-    print("$i");
+    await db.insert(
+      "$_table",
+      n.toJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<void> delete(NotificationModel n) async {

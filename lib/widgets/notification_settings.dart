@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:battery_plugin/bloc/notification_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -140,14 +139,6 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                   _allowNotifications,
                 ),
               ),
-              StreamBuilder(
-                  stream: NotificationsBloc.instance.notificationStream,
-                  builder: (context, snapshot) {
-                    return Container(
-                      child: Text(
-                          snapshot.hasData ? snapshot.data.toString() : ""),
-                    );
-                  })
             ]),
           ),
         ],

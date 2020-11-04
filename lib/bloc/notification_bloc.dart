@@ -1,53 +1,61 @@
 import 'dart:async';
 
+import 'package:battery_plugin/bloc/notification_events.dart';
+import 'package:battery_plugin/bloc/notification_state.dart';
 import 'package:battery_plugin/model/notification_model.dart';
+import 'package:battery_plugin/model/notification_storage.dart';
+import 'package:battery_plugin/src/bloc.dart';
 
-class NotificationsBloc {
-  NotificationsBloc._internal() {
-    _notificationStreamController.onListen = _onListen;
-  }
+class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
+  final db = NotificationStorage.instance;
 
-  static final NotificationsBloc instance = NotificationsBloc._internal();
-
-  bool _sendBufferedEvents = true;
-
-  Map<String, dynamic> _bufferedEvent;
-
-  Stream<NotificationModel> get notificationStream =>
-      _notificationStreamController.stream;
-
-  final _notificationStreamController =
-      StreamController<NotificationModel>.broadcast();
-
-  /// Called when `_notificationStreamController` gets first subscriber.
-  ///
-  /// We need to do this for onLaunch Notification.
-  ///
-  /// When we click the notification (when app is completely closed) `_notificationStreamController` will add event before it gets any subscriber.
-  ///
-  /// So we will cache the event before it gets first subscriber.
-  ///
-  /// In other scenario `_notificationStreamController` will have atleast one subscriber.
-  _onListen() {
-    if (_sendBufferedEvents) {
-      if (_bufferedEvent != null) {
-        _notificationStreamController.sink
-            .add(NotificationModel.fromJson(_bufferedEvent));
-      }
-      _sendBufferedEvents = false;
+  @override
+  Stream<NotificationState> mapEventToState(NotificationEvent event) async* {
+    if (event is FetchNotifications) {
+      yield* _mapFetchNotificationEvent(event);
+    } else if (event is AddNotification) {
+      yield* _mapAddNotificationEvent(event);
+    } else if (event is RemoveNotification) {
+      yield* _mapRemoveFromCartEventToCartState(event);
     }
   }
 
-  void newNotification(Map<String, dynamic> notification) {
-    if (_sendBufferedEvents) {
-      _bufferedEvent = notification;
-    } else {
-      _notificationStreamController.sink
-          .add(NotificationModel.fromJson(notification));
-    }
+  Stream<NotificationState> _mapFetchNotificationEvent(
+      FetchNotifications event) async* {
+    final notifications = await _fetchNotifications();
+    yield NotificationState(
+      widgetState: NotificationWidgetState.loaded,
+      notifications: notifications,
+    );
   }
 
-  void dispose() {
-    _notificationStreamController.close();
+  Stream<NotificationState> _mapAddNotificationEvent(
+      AddNotification event) async* {
+    print("IN BLOC TITLE : " + event.notification.id);
+    await db.insert(event.notification);
+    final notifications = await _fetchNotifications();
+    yield NotificationState(
+      widgetState: NotificationWidgetState.loaded,
+      notifications: notifications,
+    );
+  }
+
+  Stream<NotificationState> _mapRemoveFromCartEventToCartState(
+      RemoveNotification event) async* {
+    await db.delete(event.notification);
+    final notifications = await _fetchNotifications();
+    yield NotificationState(
+      widgetState: NotificationWidgetState.loaded,
+      notifications: notifications,
+    );
+  }
+
+  _fetchNotifications() async {
+    List<NotificationModel> notifications = [];
+    (await db.queryAll()).forEach((element) {
+      notifications.add(NotificationModel.fromJson(element));
+    });
+    print(notifications.toString());
+    return notifications;
   }
 }
