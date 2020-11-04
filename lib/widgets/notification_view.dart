@@ -3,7 +3,6 @@ import 'package:battery_plugin/model/notification_model.dart';
 import 'package:battery_plugin/widgets/notification_settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 
 class NotificationView extends StatefulWidget {
   @override
@@ -11,15 +10,7 @@ class NotificationView extends StatefulWidget {
 }
 
 class _NotificationViewState extends State<NotificationView> {
-  static const String _table = "notificationTable";
-  Database db;
-
-  @override
-  void initState() {
-    NotificationStorage().initialize();
-    db = NotificationStorage().db;
-    super.initState();
-  }
+  final db = NotificationStorage.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +43,8 @@ class _NotificationViewState extends State<NotificationView> {
             elevation: 0,
             actions: [
               IconButton(
-                icon: Image.asset(
-                  'assets/icons/settings.png',
+                icon: Icon(
+                  Icons.settings,
                   color: Colors.black,
                 ),
                 onPressed: () {
@@ -73,14 +64,15 @@ class _NotificationViewState extends State<NotificationView> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
           sliver: SliverToBoxAdapter(
             child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: db.query("$_table"),
+                future: db.queryAll(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
-                    List<NotificationModel> data;
+                    List<NotificationModel> data = [];
                     snapshot.data.forEach((element) {
                       data.add(NotificationModel.fromJson(element));
                     });
-                    return ListView(
+                    print(snapshot.data.toString());
+                    return Column(
                       children: List.generate(
                         data.length,
                         (int index) => Row(
@@ -118,8 +110,8 @@ class _NotificationViewState extends State<NotificationView> {
                               width: 30,
                             ),
                             IconButton(
-                                onPressed: () {
-                                  db.delete(data[index].id);
+                                onPressed: () async {
+                                  await db.delete(data[index]);
                                 },
                                 icon: Icon(
                                   Icons.delete_forever,

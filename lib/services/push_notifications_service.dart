@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:battery_plugin/bloc/notification_bloc.dart';
+import 'package:battery_plugin/model/notification_model.dart';
+import 'package:battery_plugin/model/notification_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -87,6 +89,7 @@ class NotificationService {
       message = _modifyNotificationJson(message);
     }
     _showNotification(message);
+    _performActionOnNotification(message);
   }
 
   /// This method will be called on tap of the notification which came when app was closed
@@ -120,6 +123,8 @@ class NotificationService {
   /// tap of any notification (onLaunch / onMessage / onResume)
   void _performActionOnNotification(Map<String, dynamic> message) {
     NotificationsBloc.instance.newNotification(message);
+    NotificationStorage.instance
+        .insert(NotificationModel.fromJson(message['data']));
   }
 
   _downloadAndSaveFile(String url, String fileName) async {

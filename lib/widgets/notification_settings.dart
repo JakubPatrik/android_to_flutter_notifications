@@ -56,9 +56,9 @@ class _NotificationSettingsState extends State<NotificationSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: Colors.white,
-      child: CustomScrollView(
+      body: CustomScrollView(
         slivers: [
           CupertinoSliverNavigationBar(
             leading: GestureDetector(
@@ -66,7 +66,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                 Icons.keyboard_backspace,
                 color: Colors.black,
               ),
-              onTap: () => print("Tapped"),
+              onTap: () => Navigator.pop(context),
             ),
             automaticallyImplyLeading: false,
             largeTitle: Text(

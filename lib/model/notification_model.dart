@@ -13,16 +13,16 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['data']['message_id'],
-      title: json['data']['title'],
-      body: json['data']['body'],
-      image: json['data']['image'],
+      id: json['message_id'].toString(),
+      title: json['title'],
+      body: json['body'],
+      image: json['image'],
     );
   }
 
-  Map<String, String> toJson() {
+  Map<String, dynamic> toJson() {
     return {
-      "id": this.id,
+      "message_id": this.id,
       "title": this.title,
       "body": this.body,
       "image": this.image,
